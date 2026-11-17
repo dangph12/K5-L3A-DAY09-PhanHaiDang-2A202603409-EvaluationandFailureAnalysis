@@ -75,6 +75,24 @@ def build(pr: dict[str, Any], spec: dict[str, Any]) -> dict[str, tuple[dict, dic
         th.pop("no_significant_drop", None)
     loose["slices"] = []
     out["loosened_spec"] = (copy.deepcopy(pr), loose)
+
+    t = copy.deepcopy(pr)
+    t["rows"][-1] = copy.deepcopy(t["rows"][0])  # unchanged length, one pair missing
+    out["duplicate_row_same_count"] = (_recompute(t, spec), None)
+
+    t = copy.deepcopy(pr)
+    for r in t["rows"]:
+        for m in spec["metrics"]:
+            if m["id"] in r:
+                r[m["id"]] = m.get("kind") != "safety"
+    t = _recompute(t, spec)
+    t["evaluator_failures"] = ["green-looking report with a crashed evaluator"]
+    out["green_evaluator_failure"] = (t, None)
+
+    t = copy.deepcopy(pr)
+    for r in t["rows"]:
+        r["slices"] = [s for s in r.get("slices", []) if s != "money_movement"]
+    out["relabeled_slice"] = (t, None)
     return out
 
 

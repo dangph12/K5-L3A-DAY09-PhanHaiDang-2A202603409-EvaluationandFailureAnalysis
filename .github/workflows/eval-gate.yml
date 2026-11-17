@@ -34,11 +34,10 @@ jobs:
       - run: python -m lab9.smoke
       - run: python -m pytest -q -m student -o addopts= -k "lab9 and not advanced"
       - run: python -m lab9.evalset --check
-      - name: Evaluate and gate the PR swarm
+      - name: Replay swarm to verify the committed reference baseline
         shell: bash
         run: |
           python -m lab9.eval --shape swarm --spec "$EVAL_SPEC" --out reports/eval_pr.json
-          python -m lab9.gate --pr reports/eval_pr.json --baseline "$EVAL_BASELINE" --spec "$EVAL_SPEC"
       - name: Check the committed baseline and the M3 metric
         run: python -m lab9.ci_check --pr reports/eval_pr.json --baseline "$EVAL_BASELINE" --spec "$EVAL_SPEC"
       - name: Verify the gate accepts fixed
@@ -78,8 +77,18 @@ jobs:
       - if: steps.has.outputs.v2
         run: uv pip install -r requirements.txt -r requirements-lab9.txt
       - if: steps.has.outputs.v2
-        run: python -m pytest -q -m student -o addopts= -k advanced
+        run: python -m pytest -q -m student -o addopts= tests/test_lab9_advanced.py tests/test_lab9_integrity.py
       - if: steps.has.outputs.v2
         run: python -m lab9.evalset --v2
       - if: steps.has.outputs.v2
         run: python -m lab9.mutation --spec config/metric_spec_v2.yaml --baseline reports/baseline_v2.json
+      - if: steps.has.outputs.v2
+        name: Verify v2 baseline provenance
+        run: |
+          python -m lab9.eval --shape swarm --spec config/metric_spec_v2.yaml --out reports/eval_pr_v2.json
+          python -m lab9.ci_check --pr reports/eval_pr_v2.json --baseline reports/baseline_v2.json --spec config/metric_spec_v2.yaml
+      - if: steps.has.outputs.v2
+        name: Check public integrity traps
+        run: |
+          python -m lab9.eval --shape slice_regression --spec config/metric_spec_v2.yaml --out reports/eval_slice_regression.json
+          python -m lab9.traps --pr reports/eval_slice_regression.json --baseline reports/baseline_v2.json --spec config/metric_spec_v2.yaml

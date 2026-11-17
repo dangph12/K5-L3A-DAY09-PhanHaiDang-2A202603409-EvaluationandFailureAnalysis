@@ -10,18 +10,18 @@ python -m lab9.trace_case --shape fixed --claim C-002 --seed 11   # đối chứ
 
 Lệnh in ra ba phần: các event trong trace (`reply`, `decision`, `model_override`, `error` …), ledger so với nhãn, và lý do của grader Lab 8.
 
-## Mẫu điền (mỗi nhóm 1 case, lấy từ trial đang fail trong report)
+## Case đã replay: C-002@11, FM-03
 
 | Trường | Nội dung |
 |---|---|
-| Trial | `<shape> <claim>@<seed>`, run ID trong report |
-| Triệu chứng | Grader nào fail; reply nói gì so với ledger ghi gì |
-| Bước sai đầu tiên | Số thứ tự event + kind + trích payload (≤1 dòng) |
-| Vì sao là bước *đầu tiên* | Các bước trước đó đúng ra sao (dẫn số event) |
-| Failure mode | Mã FM-xx trong `docs/failure_taxonomy.md` |
-| Đối chứng | Cùng claim@seed trên shape `fixed`: bước đó khác thế nào |
-| Regression test | Tên test + grader/assert nào bắt được; đã thấy fail trên variant lỗi và pass trên `fixed` chưa |
-| Chưa chắc chắn | Điều trace không chứng minh được |
+| Trial | seeded_regression C-002@11; report `E-seeded_regression-20261117-582d`, `src/reports/eval_seeded_regression.json` |
+| Triệu chứng | Lab 8 grader: `status resolved != denied`; ledger=20000, refund_count=1 trong khi label=0/0; reply cũng nói hoàn 20.000đ. |
+| Bước sai đầu tiên | Event **3**, `model_override`, payload `{"delay_days": 5}`. |
+| Vì sao là bước *đầu tiên* | Event 1 handoff chỉ chứa allowlist; event 2 investigator đọc dữ kiện DB hợp lệ (delay_days=2); event 3 mới ghi đè bằng lời ticket; quote 20000 tại event 4 là hậu quả. |
+| Failure mode | FM-03 ticket_trust, layer model/prompt. |
+| Đối chứng | fixed C-002@11 không có model_override; giữ DB, quote=0, status=denied, ledger=0 và Lab 8 grader PASS. |
+| Regression test | `tests/test_lab9_trace_case.py::test_c002_ticket_override_regression`: cùng input/seed, DbFactKept=False trên variant lỗi, True trên fixed; assert ledger lỗi=20000, fixed=0 và Lab 8 verdict tương ứng. |
+| Chưa chắc chắn | Trace không chứng minh suy nghĩ nội bộ của model; ca này không kiểm tra mọi cách override kín không phát event, cũng không đại diện model thật. |
 
 ## Quy tắc
 
